@@ -40,7 +40,8 @@ async function main() {
   const previous = canonical || catalogRelease.assets.filter(a=>/^catalog-next-[a-f0-9]{64}\.json$/.test(a.name)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id-a.id)[0];
   let entries = [];
   if (previous) {
-    const response = await fetch(previous.browser_download_url, { signal: AbortSignal.timeout(60000) }); if (!response.ok) throw Error('Catalog unavailable');
+    const currentCatalogUrl=new URL(previous.browser_download_url);currentCatalogUrl.searchParams.set('asset_id',String(previous.id));
+    const response = await fetch(currentCatalogUrl, { cache:'no-store',signal: AbortSignal.timeout(60000) }); if (!response.ok) throw Error('Catalog unavailable');
     const envelope = await response.json();
     if (!crypto.verify(null, Buffer.from(envelope.payload), publicKey, Buffer.from(envelope.signature, 'base64'))) throw Error('Existing catalog signature invalid');
     entries = JSON.parse(envelope.payload).plugins;

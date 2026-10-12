@@ -14,7 +14,8 @@ async function main(){
  const canonical=release?.assets.find(a=>a.name==='catalog.json');
  const previous=canonical||release?.assets.filter(a=>/^catalog-next-[a-f0-9]{64}\.json$/.test(a.name)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id-a.id)[0];
  if(previous){
-  const fetched=await fetch(previous.browser_download_url,{cache:'no-store',signal:AbortSignal.timeout(60000)});if(!fetched.ok)throw Error('Catalog unavailable');
+  const currentCatalogUrl=new URL(previous.browser_download_url);currentCatalogUrl.searchParams.set('asset_id',String(previous.id));
+  const fetched=await fetch(currentCatalogUrl,{cache:'no-store',signal:AbortSignal.timeout(60000)});if(!fetched.ok)throw Error('Catalog unavailable');
   const plugins=removeEntries(await fetched.json(),publicKey,items),envelope=signCatalog(plugins,key);
   const digest=crypto.createHash('sha256').update(envelope).digest('hex');
   const staged=await fetch(release.upload_url.split('{')[0]+'?name=catalog-next-'+digest+'.json',{method:'POST',headers:{...headers,'content-type':'application/octet-stream'},body:envelope,signal:AbortSignal.timeout(60000)});
