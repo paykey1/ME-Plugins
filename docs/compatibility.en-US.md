@@ -8,7 +8,7 @@ Documentation revision: 2026-10-12.
 |---|---|
 | Released ME versions | Check the release notes for your version; this guide does not claim that every released version supports these APIs |
 | ME 1.0.0 development preview | API 1 and API 2 capabilities in this guide have been tested; this is not a stable release announcement |
-| Revised server-side official certification | Client contract implemented; revised production workflow not yet deployed |
+| Revised server-side official certification | Production review UI and signing/publishing workflow deployed on 2026-10-12; administrator controls and access restrictions verified. End-to-end building and publishing of a new real submission remains to be verified after approval |
 
 API 1 supports host-generated command forms and optional image automation. API 2 additionally supports sandboxed workspaces, activation and Agent contexts. API 2 does not replace API 1; a host lacking API 2 rejects such manifests. Do not change ME's application version to the plugin API version.
 
