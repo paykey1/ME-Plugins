@@ -1,0 +1,101 @@
+name: Build reviewed ME plugin
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+concurrency:
+  group: me-plugin-publication
+  cancel-in-progress: false
+permissions:
+  contents: read
+env:
+  REVIEW_URL: https://me-user-center.paykey3.workers.dev
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Remove withdrawn plugins from signed distribution
+        run: node delete.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PLUGIN_BUILD_TOKEN: ${{ secrets.PLUGIN_BUILD_TOKEN }}
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
+  package:
+    needs: remove
+    runs-on: windows-latest
+    timeout-minutes: 15
+    outputs:
+      ready: ${{ steps.source.outputs.ready }}
+      submission: ${{ steps.source.outputs.submission }}
+      source_sha256: ${{ steps.source.outputs.source_sha256 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - id: source
+        name: Download frozen approved source
+        run: node fetch-source.cjs
+        env:
+          PLUGIN_BUILD_TOKEN: ${{ secrets.PLUGIN_BUILD_TOKEN }}
+      - name: Validate and package without executing submitted code
+        if: steps.source.outputs.ready == 'true'
+        run: node package.cjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.source.outputs.ready == 'true'
+        with:
+          name: distributable
+          path: output/
+          retention-days: 1
+          if-no-files-found: error
+  publish:
+    needs: package
+    if: needs.package.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: distributable
+          path: output/
+      - name: Publish immutable package and signed catalog
+        run: node publish.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PLUGIN_BUILD_TOKEN: ${{ secrets.PLUGIN_BUILD_TOKEN }}
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
+  failure:
+    needs: [package, publish]
+    if: always() && (needs.package.result == 'failure' || needs.publish.result == 'failure') && needs.package.outputs.submission != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record failure for administrator retry
+        run: node failure.cjs
+        env:
+          SUBMISSION_ID: ${{ needs.package.outputs.submission }}
+          SOURCE_SHA256: ${{ needs.package.outputs.source_sha256 }}
+          PLUGIN_BUILD_TOKEN: ${{ secrets.PLUGIN_BUILD_TOKEN }}
