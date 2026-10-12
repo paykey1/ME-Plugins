@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs/promises'), crypto = require('node:crypto');
 const { validateManifest } = require('./lib/contract');
+const { releasedAsset } = require('./released-asset.cjs');
 const base = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY;
 const headers = { authorization: 'Bearer ' + process.env.GITHUB_TOKEN, 'User-Agent': 'ME-plugin-publisher', Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 async function api(route, method = 'GET', body) {
@@ -30,6 +31,9 @@ async function main() {
   if (!asset) asset = await upload(release, receipt.filename, bytes);
   if (asset.digest !== 'sha256:' + receipt.packageSha256 || asset.size !== receipt.size) throw Error('Remote package verification failed');
   if (release.draft) release = await api('/releases/' + release.id, 'PATCH', { draft: false });
+  // Draft uploads use an untagged URL. Read the public release before signing its final URL.
+  release = await api('/releases/tags/' + tag);
+  asset = releasedAsset(release, process.env.GITHUB_REPOSITORY, receipt);
   let catalogRelease = await api('/releases/tags/plugin-catalog');
   if (!catalogRelease) catalogRelease = await api('/releases', 'POST', { tag_name: 'plugin-catalog', name: 'ME plugin catalog', body: 'Signed plugin catalog. Plugin source submissions are private.', draft: false });
   const canonical = catalogRelease.assets.find(item => item.name === 'catalog.json');
