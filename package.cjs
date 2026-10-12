@@ -7,7 +7,7 @@ const { safeRelativePath } = require('./lib/contract');
 async function main() {
   const approved = JSON.parse(await fs.readFile('approved.json', 'utf8'));
   const sevenZip = process.env.SEVEN_ZIP || 'C:/Program Files/7-Zip/7z.exe';
-  const packages = new PluginPackages({ directory: path.resolve('.validated'), sevenZip });
+  const packages = new PluginPackages({ directory: path.resolve('.validated'), sevenZip, publicKey: null });
   const sourceRoot=await fs.mkdtemp(path.resolve('.source-'));
   try {
     const prepared = await prepareSource(path.resolve('source.' + approved.format),sourceRoot,sevenZip);

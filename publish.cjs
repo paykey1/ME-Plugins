@@ -2,6 +2,8 @@
 const fs = require('node:fs/promises'), crypto = require('node:crypto');
 const { validateManifest } = require('./lib/contract');
 const { releasedAsset } = require('./released-asset.cjs');
+const { seal } = require('./seal.cjs');
+const path=require('node:path');
 const base = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY;
 const headers = { authorization: 'Bearer ' + process.env.GITHUB_TOKEN, 'User-Agent': 'ME-plugin-publisher', Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 async function api(route, method = 'GET', body) {
@@ -18,11 +20,12 @@ async function main() {
   const receipt = JSON.parse(await fs.readFile('output/receipt.json', 'utf8'));
   const permit=await fetch(process.env.REVIEW_URL+'/v1/plugins/build/'+receipt.id+'/permit',{method:'POST',headers:{authorization:'Bearer '+process.env.PLUGIN_BUILD_TOKEN,'content-type':'application/json'},body:JSON.stringify({sourceSha256:receipt.sourceSha256}),signal:AbortSignal.timeout(30000)});
   if(!permit.ok)throw Error('Publication is no longer authorized: '+permit.status);
+  const authorization=await permit.json();
   const manifest = validateManifest(receipt.manifest);
   if (manifest.id !== receipt.pluginId || manifest.version !== receipt.version || receipt.filename !== `${manifest.id}-${manifest.version}.zip`) throw Error('Invalid package receipt');
-  const bytes = await fs.readFile('output/' + receipt.filename);
-  if (crypto.createHash('sha256').update(bytes).digest('hex') !== receipt.packageSha256 || bytes.length !== receipt.size) throw Error('Package changed');
   const key = crypto.createPrivateKey(process.env.CATALOG_SIGNING_KEY), publicKey = crypto.createPublicKey(key);
+  const sealed=await seal({filename:path.resolve('output',receipt.filename),receipt,permit:authorization,privateKey:key,sevenZip:process.env.SEVEN_ZIP||'C:/Program Files/7-Zip/7z.exe',directory:path.resolve('.signed-validation')});
+  const bytes=sealed.bytes;receipt.packageSha256=sealed.packageSha256;receipt.size=sealed.size;
   const tag = manifest.id + '-v' + manifest.version;
   let release = await api('/releases/tags/' + tag);
   if (!release) release = await api('/releases', 'POST', { tag_name: tag, name: manifest.name['en-US'] + ' ' + manifest.version, draft: true, body: 'Reviewed source SHA-256: ' + receipt.sourceSha256 + '\nPackage SHA-256: ' + receipt.packageSha256 });
@@ -46,7 +49,7 @@ async function main() {
     if (!crypto.verify(null, Buffer.from(envelope.payload), publicKey, Buffer.from(envelope.signature, 'base64'))) throw Error('Existing catalog signature invalid');
     entries = JSON.parse(envelope.payload).plugins;
   }
-  const item = { manifest, sha256: receipt.packageSha256, sourceSha256: receipt.sourceSha256, size: receipt.size, url: asset.browser_download_url, releaseUrl: release.html_url };
+  const item = { manifest, publisher:sealed.publisher, sha256: receipt.packageSha256, sourceSha256: receipt.sourceSha256, size: receipt.size, url: asset.browser_download_url, releaseUrl: release.html_url };
   entries = [...entries.filter(entry => entry.manifest.id !== manifest.id), item];
   const payload = JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), plugins: entries });
   const envelope = Buffer.from(JSON.stringify({ payload, signature: crypto.sign(null, Buffer.from(payload), key).toString('base64') }));
@@ -56,7 +59,7 @@ async function main() {
   if(staged.digest!=='sha256:'+envelopeHash)throw Error('Catalog staging verification failed');
   if (canonical) await api('/releases/assets/' + canonical.id, 'DELETE');
   await upload(catalogRelease, 'catalog.json', envelope);
-  const response = await fetch(process.env.REVIEW_URL + '/v1/plugins/build/' + receipt.id + '/complete', { method: 'POST', headers: { authorization: 'Bearer ' + process.env.PLUGIN_BUILD_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceSha256: receipt.sourceSha256, packageSha256: receipt.packageSha256, releaseUrl: release.html_url }), signal: AbortSignal.timeout(30000) });
+  const response = await fetch(process.env.REVIEW_URL + '/v1/plugins/build/' + receipt.id + '/complete', { method: 'POST', headers: { authorization: 'Bearer ' + process.env.PLUGIN_BUILD_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ publisher:sealed.publisher,sourceSha256: receipt.sourceSha256, packageSha256: receipt.packageSha256, releaseUrl: release.html_url }), signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw Error('Review completion HTTP ' + response.status);
   console.log('Published package and signed catalog; review status updated.');
 }
