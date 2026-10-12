@@ -15,6 +15,8 @@ async function upload(release, name, bytes) {
 }
 async function main() {
   const receipt = JSON.parse(await fs.readFile('output/receipt.json', 'utf8'));
+  const permit=await fetch(process.env.REVIEW_URL+'/v1/plugins/build/'+receipt.id+'/permit',{method:'POST',headers:{authorization:'Bearer '+process.env.PLUGIN_BUILD_TOKEN,'content-type':'application/json'},body:JSON.stringify({sourceSha256:receipt.sourceSha256}),signal:AbortSignal.timeout(30000)});
+  if(!permit.ok)throw Error('Publication is no longer authorized: '+permit.status);
   const manifest = validateManifest(receipt.manifest);
   if (manifest.id !== receipt.pluginId || manifest.version !== receipt.version || receipt.filename !== `${manifest.id}-${manifest.version}.zip`) throw Error('Invalid package receipt');
   const bytes = await fs.readFile('output/' + receipt.filename);
@@ -30,7 +32,8 @@ async function main() {
   if (release.draft) release = await api('/releases/' + release.id, 'PATCH', { draft: false });
   let catalogRelease = await api('/releases/tags/plugin-catalog');
   if (!catalogRelease) catalogRelease = await api('/releases', 'POST', { tag_name: 'plugin-catalog', name: 'ME plugin catalog', body: 'Signed plugin catalog. Plugin source submissions are private.', draft: false });
-  const previous = catalogRelease.assets.find(item => item.name === 'catalog.json');
+  const canonical = catalogRelease.assets.find(item => item.name === 'catalog.json');
+  const previous = canonical || catalogRelease.assets.filter(a=>/^catalog-next-[a-f0-9]{64}\.json$/.test(a.name)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id-a.id)[0];
   let entries = [];
   if (previous) {
     const response = await fetch(previous.browser_download_url, { signal: AbortSignal.timeout(60000) }); if (!response.ok) throw Error('Catalog unavailable');
@@ -43,7 +46,10 @@ async function main() {
   const payload = JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), plugins: entries });
   const envelope = Buffer.from(JSON.stringify({ payload, signature: crypto.sign(null, Buffer.from(payload), key).toString('base64') }));
   // Publish a single signed envelope; clients retain their last verified catalog during replacement.
-  if (previous) await api('/releases/assets/' + previous.id, 'DELETE');
+  const envelopeHash=crypto.createHash('sha256').update(envelope).digest('hex');
+  const staged=await upload(catalogRelease,'catalog-next-'+envelopeHash+'.json',envelope);
+  if(staged.digest!=='sha256:'+envelopeHash)throw Error('Catalog staging verification failed');
+  if (canonical) await api('/releases/assets/' + canonical.id, 'DELETE');
   await upload(catalogRelease, 'catalog.json', envelope);
   const response = await fetch(process.env.REVIEW_URL + '/v1/plugins/build/' + receipt.id + '/complete', { method: 'POST', headers: { authorization: 'Bearer ' + process.env.PLUGIN_BUILD_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceSha256: receipt.sourceSha256, packageSha256: receipt.packageSha256, releaseUrl: release.html_url }), signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw Error('Review completion HTTP ' + response.status);
