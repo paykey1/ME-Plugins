@@ -1,8 +1,8 @@
 # ME Plugin Developer Guide
 
-Specification revision: 2026-10-12. Supported plugin APIs: 1 and 2. This is a self-contained implementation contract for developers and coding agents. It describes implemented capabilities, not a roadmap. The host version accepting these capabilities must be used for testing; a plugin API number is not an ME application release number.
+Supported plugin APIs: 1 and 2. This implementation specification is for plugin developers and coding agents. It covers APIs, interfaces, storage, packaging, submission and validation. A plugin API number is not an ME application version.
 
-Availability: the capabilities below are verified in the ME 1.0.0 development preview. ME 1.0.0 is not yet a published stable release; check the release notes for support in released versions. The revised server-side official-certification workflow is deployed to production. Check the release compatibility notes before choosing a target host.
+Before development, read [Compatibility and update requirements](compatibility.en-US.md), check the release notes for your target ME version, and verify the capabilities your plugin uses in that version.
 
 ## 1. Instructions for a coding agent
 
@@ -338,24 +338,24 @@ ME handles installation/removal progress and recovery. Uninstall defaults to kee
 
 The archive filename prefix should match `plugin.json.id`; use `<id>-<version>.zip` as the recommended naming convention. When filling out the submission form, open the packaged `plugin.json` and read `id` and `version` separately. Do not use the display name or derive the ID by arbitrarily truncating the filename. The filename is a convenience; the manifest is the identity authority.
 
-For example, when the manifest has `id: "me.actor-tracker"` and `version: "1.1.4"`:
+For example, when the manifest has `id: "example.tagger"` and `version: "1.1.4"`:
 
 | Item | Correct value |
 |---|---|
-| Install archive filename | `me.actor-tracker-1.1.4.zip` |
-| Submission plugin ID | `me.actor-tracker` |
+| Install archive filename | `example.tagger-1.1.4.zip` |
+| Submission plugin ID | `example.tagger` |
 | Submission version | `1.1.4` |
-| Optional source archive filename | `me.actor-tracker-1.1.4-source.zip` |
+| Optional source archive filename | `example.tagger-1.1.4-source.zip` |
 
-The submission ID includes neither the version, `.zip`, nor `-source`. An additional `source` suffix on the source archive does not change its ID: it remains `me.actor-tracker`. New source submissions require ZIP. Local plugin installation still supports ZIP/7z; these are separate entry points.
+The submission ID includes neither the version, `.zip`, nor `-source`. An additional `source` suffix on the source archive does not change its ID: it remains `example.tagger`. New source submissions require ZIP. Local plugin installation still supports ZIP/7z; these are separate entry points.
 
-As of 2026-10-12, pre-upload validation is integrated into the ME development preview: selecting a ZIP reads its manifest and fills the ID and version automatically; a mismatch before submission blocks the upload. The server-side backstop is deployed: it checks again after upload and rejects mismatches with the expected values before human review. Autofill uses the manifest, not the filename. Older clients may lack autofill but remain subject to server validation. This change does not announce a new desktop installer release.
+When you select a submission ZIP, ME reads its `plugin.json` and fills the plugin ID and version automatically. A mismatch detected before submission blocks the upload. Autofill uses the manifest, not the filename. After upload, the server checks the ID and version again. Mismatched submissions are rejected with the expected values and do not enter human review. If your client does not provide autofill, enter the manifest values manually; the same server validation applies.
 
 An installation package is a ZIP or 7z archive, not an EXE. Put manifest, entry, README, license and all runnable files directly at its root. No wrapper directory, encryption, links, traversal paths or case collisions. Installation limits are 64 MiB compressed, 512 MiB unpacked and 10,000 entries. These are separate from source submission limits; do not describe them as a fixed source-upload cap. Download large models separately with the resource rules above.
 
 Plain JavaScript requires no compilation. If using TypeScript or a bundler, include complete original source, pinned dependencies/lockfile, build instructions and runnable output. Include all production dependencies and their licenses; never rely on ME's node_modules or globally install packages. The current publication packager selects the declared `files`, validates approved source and creates the install ZIP. It does not execute arbitrary uploaded build scripts or run npm install. Test your output on a clean machine/environment before submitting.
 
-The official route stores submissions/review records privately in Cloudflare and distributes install ZIPs and a signed catalog through GitHub. The submission ID/version must match the manifest; include complete source, README with permission purposes, dependency/network/model information, troubleshooting and data-retention behavior. Users can submit from ME after login. Review approval, queued build, running build and published are distinct states; only a verified client download/install completes publication. Publishing new compatible catalog entries does not require an ME frontend update. GitHub is distribution infrastructure, not a runtime dependency or a guarantee of download speed. Production availability must be verified, not inferred from local tests.
+Submitted source is used for review. Published installation ZIPs and the signed catalog are distributed through the official plugin center. The submission ID/version must match the manifest; include complete source, README with permission purposes, dependency/network/model information, troubleshooting and data-retention behavior. Users can submit from ME after login. Review approval, queued build, running build and published are distinct states; only a verified client download/install completes publication. Users can download and install newly published plugins that use existing supported APIs without a plugin-specific ME update. Verify downloading and installing the published package.
 
 Official certification is a separate explicit administrator action bound to reviewer, time, source digest, ID and version. Ordinary review yields community identity. A rebuild must use the exact approved source; replacing it requires review again. Keep source ZIP and distribution ZIP digests distinct and associated. Never infer official status from author names or a signature alone.
 
@@ -394,4 +394,4 @@ Run the applicable cases and record actual results, host/API and plugin versions
 | Publication | Complete source reproducible to runnable output; reviewed source digest matches publication input; actual catalog download, verification and installation |
 | Performance | Realistic library size, multiple idle plugins, no repeated full package verification, early usable UI and bounded list rendering |
 
-Final handoff includes the complete source archive, install archive, both hashes, exact version, build commands or an explicit no-build statement, dependencies/licenses, known limitations and this completed checklist. Do not claim publication, production deployment or compatibility with an untested host. These checks, rather than a promise from an Agent, establish that the plugin meets the contract.
+Final handoff includes the complete source archive, install archive, both hashes, exact version, build commands or an explicit no-build statement, dependencies/licenses, known limitations and this completed checklist. Compatibility claims must list the ME versions actually tested. Publication status must match the plugin center and be verified by downloading and installing the published package.

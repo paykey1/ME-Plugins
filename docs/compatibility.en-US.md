@@ -1,28 +1,34 @@
-# Compatibility and changes
+# Compatibility and update requirements
 
-Documentation revision: 2026-10-12.
+## Choosing a target version
 
-## Availability
+ME 0.26.0 is released. Record the exact ME version, plugin API number and plugin version used for development and testing, and check that ME version's release notes. A documentation update alone does not establish support in older versions.
 
-| Target | Status |
+| Plugin API | Intended use |
 |---|---|
-| Released ME versions | Check the release notes for your version; this guide does not claim that every released version supports these APIs |
-| ME 1.0.0 development preview | API 1 and API 2 capabilities in this guide have been tested; this is not a stable release announcement |
-| Revised server-side official certification | Production review UI and signing/publishing workflow deployed on 2026-10-12; administrator controls, access restrictions, and building and publishing new versions for two real submissions verified |
+| API 1 | Host-generated command forms and optional image jobs |
+| API 2 | Custom sandboxed workspaces, activation and Agent contexts |
 
-API 1 supports host-generated command forms and optional image automation. API 2 additionally supports sandboxed workspaces, activation and Agent contexts. API 2 does not replace API 1; a host lacking API 2 rejects such manifests. Do not change ME's application version to the plugin API version.
+API 2 does not replace API 1. A host without API 2 support rejects such manifests. Plugin API numbers and ME application versions are independent. Do not use an API number as an application version or add an unspecified minimum-host-version manifest field.
 
-## Changes in this revision
+## Compatibility requirements
 
-- Separate Chinese and English guides replace mixed-language explanations. Each contains complete API 1 and API 2 examples and validation requirements.
-- Full package verification is an installation/upgrade boundary. Routine opening, commands, resources and idle polling avoid full content scans while retaining live authorization and path checks.
-- Publisher identity is independent of installation channel. A locally imported official-signed archive has no fixed official trust. Explicit user trust gives the same declared-operation policy; upgrades preserve it only for the same identity without expanded permissions/effects/contexts or added commands.
-- Host-managed image jobs document independent task counts, recognized-result skipping, review chips, approve-all, automatic application and distinct stop/clear/watching behavior.
-- Updates retain enabled state, settings, models and environments. Uninstallation offers private-data retention and recoverable cleanup.
-- UI guidance requires early rendering, accurate progress, theme inheritance unless explicitly overridden, and live language changes without lost state.
+- List the ME versions actually tested in the plugin documentation. Confirm target-version support before using a new capability.
+- Explain missing required capabilities clearly. An unavailable optional capability must not block unrelated functionality.
+- Inherit the ME theme unless colors are explicitly specified, and scope overrides to the plugin. Language changes must preserve input, selections and running tasks.
+- Use host storage and runtime APIs. Do not depend on private installation files, internal modules or development-machine paths.
+- Verify both local import and plugin-center installation. Publisher identity and installation channel are separate concepts.
 
 ## Updating a plugin
 
-Keep its ID, increment its three-part version and preserve storage. Test migration from the prior data schema, signature/trust changes and existing pending tasks. Do not treat a new documentation revision as automatic compatibility with every ME build. Review the current guide before adding capabilities; do not silently ignore unsupported host features or invent a minimum-host manifest field.
+Keep the plugin ID unchanged and increment its three-part version. Updates should retain enabled state, settings, models and recognition environments. Validate plugin data migrations, back up before migration, and handle failures and existing pending tasks.
 
-Canonical tutorials: [English](plugin-development-guide.en-US.md) and [Chinese](plugin-development-guide.zh-CN.md). Published documentation is the reference; historical reports and copied older guides may contain superseded behavior.
+Explicit user trust is inherited only for the same identity without expanded permissions, effects or contexts, or added commands. Test authorization when signatures or permissions change; do not assume existing authorization covers new capabilities.
+
+Users choose whether to retain private plugin data on uninstall. Never remove user media, applied tags or shared runtimes. Allow retrying failed cleanup.
+
+## Submission and publication
+
+The submission ID and version must match the manifest inside the source ZIP. Review approval, queued build, running build and published are distinct states. Download and install the published package from the official plugin center before announcing that it is available.
+
+See the [developer guide](plugin-development-guide.en-US.md) for the complete API contract, examples and validation checklist.
