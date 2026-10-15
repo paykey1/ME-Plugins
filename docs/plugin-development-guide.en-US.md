@@ -261,6 +261,14 @@ Provide complete Chinese and English UI labels, errors, loading states and confi
 
 Use consistent button height, readable alignment, visible keyboard focus and narrow-window layouts. Differentiate primary, secondary and destructive actions using the host theme. Show a shell before awaiting settings, heavy module imports, models or large lists; page or virtualize large lists. A settings-load failure must be visible and retryable, never treated as empty defaults that can overwrite saved settings.
 
+### Contextual help and explanatory text
+
+Put ordinary supplementary explanations behind a circled exclamation help button next to the relevant control instead of permanent paragraphs. Required warnings, permissions, consequences such as deletion or overwriting, errors and live task status must remain directly visible. Help must never replace host confirmation.
+
+Support keyboard focus, click and touch, readable names and description relationships. While help is open, Escape closes only that help. Update language and theme without losing inputs or task state; check narrow windows, viewport edges and long text. Reinitializing dynamic nodes must not duplicate bindings; disposal must clean up listeners, subscriptions, observers and timers.
+
+The host help component is not exposed as a sandbox plugin API. API 1 uses documented description fields; API 2 implements help inside its own iframe without accessing host DOM. See the [runnable plugin contextual help example](contextual-help.en-US.md) for working code, integration steps and a verification checklist.
+
 ## 9. Storage, dependencies and manual resources
 
 Always obtain storage through `storage.directory`. ME's managed plugin locations are below the application's `AppData`, including the installed code and private data. Do not hardcode a drive, user home, version path or another disk. Keep models, virtual environments, settings, caches and downloads in assigned data storage; place temporary files there too and set TEMP/TMP/TMPDIR for child installers. Native code must follow these conventions itself.
