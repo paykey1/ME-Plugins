@@ -32,3 +32,5 @@ Users choose whether to retain private plugin data on uninstall. Never remove us
 The submission ID and version must match the manifest inside the source ZIP. Review approval, queued build, running build and published are distinct states. Download and install the published package from the official plugin center before announcing that it is available.
 
 See the [developer guide](plugin-development-guide.en-US.md) for the complete API contract, examples and validation checklist.
+
+New selection-dialog, directory-grant and FFmpeg interfaces require host `ready().features` checks; do not infer availability from “0.26+”. See [feature detection and example](selection-workspace.en-US.md).

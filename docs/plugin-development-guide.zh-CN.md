@@ -118,10 +118,10 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 | media.selection | media.read | 无参数 → [{assetId,path,type}] |
 | tags.propose | tags.propose | {items:[{assetId,tags:string[]}]} → {planId,count} |
 | storage.directory | storage.private | 无参数 → {directory} |
-| runtime.tool | runtime.tools | {name:'uv'} 或 {name:'7z'} → {path,managedPythonDirectory,cacheDirectory} |
+| runtime.tool | runtime.tools | {name:'uv'} 或 {name:'7z'} → {path,managedPythonDirectory,cacheDirectory}。新增 {name:'ffmpeg'} → {path}，需先检测能力，见选区指南。 |
 | network.request | network.request | {url,method?,headers?,body?} → {status,contentType,body} |
 | tasks.progress | tasks.progress | 第 10 节进度 → {accepted:true} |
-| files.resolve | ui.dialogs | {token,mode:'read'} → {path,name,size}，需要有效工作区 |
+| files.resolve | ui.dialogs | {token,mode:'read'} → {path,name,size}，需要有效工作区。新增 mode:'write-dir' 通过已授权目录凭据返回 {path,name}，需先检测能力。 |
 | files.export | ui.dialogs | {path,name} → {token,name,size}，需要有效工作区 |
 | creators.lookup | creators.read | {records} → {items:[{index,exists,invalid?}]} |
 | creators.propose | creators.propose | {records} → {planId,items:[{index,status,reason?}],expiresAt} |
@@ -237,6 +237,8 @@ MEPlugin.ready().then(context => {
 |---|---|---|
 | dialog.open | ui.dialogs | {extensions:['txt'],multiple:false} → {cancelled,files:[{token,name,size}]} |
 | dialog.save | ui.dialogs | {token} → {cancelled} |
+| media.selection | media.read | {} → 命令绑定的选区，需 selection-dialog 能力 |
+| dialog.directory | ui.dialogs | {} → {cancelled:true} 或 {cancelled:false,token,name}，需 directory-token 能力 |
 | storage.resource | storage.read | 相对 {path} → 会话内有效的图片 {url} |
 | clipboard.write | ui.clipboard | {text} 最多 100000 字符 → {written:true} |
 | external.open | ui.external | {url} → {opened:true} 或 {cancelled:true} |
@@ -245,9 +247,15 @@ MEPlugin.ready().then(context => {
 
 正确调用为 MEPlugin.request('storage.resource',{path})，不存在 MEPlugin.storage.resource。sdk.request 和 MEPlugin.request 方法集合不同。pluginJobConfigure、pluginJobControl、安装器、信任控制属于主体内部，不是插件 SDK。
 
+较新宿主的 ready() 另返回可选 features 和 selectionBound。使用新增接口前检测能力，字段缺失不能视为支持。详细返回格式和失效条件见选区指南。
+
 脚本样式随包以相对路径加载，禁止内联脚本、eval、外部脚本、浏览器直接联网、Node 集成和 Electron IPC。外部文本用 textContent，不能 innerHTML；联网放后台。不复制主体桥接代码、不持久保存工作区或文件凭据。停用、卸载、隐私锁和升级替换会撤销会话；隐藏或关闭时请求可能失败，不能缓存写入后在返回时重放，应新会话重读状态。
 
-接口 1 表单打开时绑定媒体选择，换选区需重开。接口 2 工作区不隐式提供媒体选区。默认工作区侧栏页面；workspace 可设 placement:'creator-toolbar'、platform、presentation:'dialog' 作为平台工具栏弹窗。支持 DOUYIN/TIKTOK/XIAOHONGSHU/TWITTER/INSTAGRAM/BILIBILI/PIXIV/FANTIA/OTHER。侧栏必须 page 且无 platform，不接受任意 DOM 选择器。关闭或 Escape 沿用主体任务选择。
+接口 1 表单打开时绑定媒体选择，换选区需重开。接口 2 工作区不隐式提供媒体选区；声明选区弹窗命令后，可由媒体菜单显式绑定快照。默认工作区侧栏页面；workspace 可设 placement:'creator-toolbar'、platform、presentation:'dialog' 作为平台工具栏弹窗。支持 DOUYIN/TIKTOK/XIAOHONGSHU/TWITTER/INSTAGRAM/BILIBILI/PIXIV/FANTIA/OTHER。侧栏必须 page 且无 platform，不接受任意 DOM 选择器。关闭或 Escape 沿用主体任务选择。
+
+
+
+选区条件 `when.selection`、命令弹窗 `ui.open`、工作区 `media.selection`、目录授权 `dialog.directory` / `files.resolve(write-dir)` 和托管 `runtime.tool(ffmpeg)` 见[选区弹窗与转码工具](selection-workspace.zh-CN.md)。该文档包含能力检测、完整可运行预检插件、权限与关闭规则；不能将这些新增能力默认视为所有旧版 ME 均支持。
 
 ## 8. 主题、语言与交互
 
@@ -381,6 +389,14 @@ JavaScript 无需编译；TypeScript 或打包器需完整原源码、锁定依�
 - 下架、卸载、删私有数据、停任务、清待审不是同一件事。
 
 ## 18. 必做验证及交付
+
+### 不依赖 ME 源码的本地调试
+
+安装和本地测试不需要 ME 主体源码。复现问题时记录 ME 与插件版本、命令标识、任务编号、输入类型（不包含私人文件内容）、最后进度阶段及 status(taskId).error.code。区分接口拒绝与插件执行失败；任务完成后可查询结果，进入结束状态或销毁界面后停止轮询。
+
+现有诊断能力有限：diagnostics.report 只收性能数值，不接收文本日志。后台命令的标准输出和错误输出未被收集，未捕获的 JavaScript 异常可能被转换为 PLUGIN_EXECUTION_FAILED，不带源码行号和堆栈。不要声称 ME 常规日志一定包含这些信息，也不要依靠后台 console.log 获取诊断记录。
+
+trusted-native 后台可在 storage.directory 返回的插件私有目录中自行维护有大小限制的诊断文件（需 storage.private 权限）。在插件边界捕获异常，记录脱敏后的错误说明、插件内相对源码位置和处理阶段，并提供明确的日志获取入口。限制文件数量和大小，不记录令牌、凭据、媒体内容及不必要的绝对路径。工作区界面不能直接使用 Node 文件接口，应通过声明的后台命令获取日志并使用文档中的导出流程。这是插件自行实现的临时调试方式，并非已有的 ME 统一诊断日志接口。交给 agent 排查时，提供相关脱敏片段、复现步骤和插件源码，不提供账号凭据。
 
 记录实际结果、宿主版本、接口和插件版本。不适用须说明，不默默跳过。
 

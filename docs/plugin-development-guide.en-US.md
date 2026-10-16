@@ -122,10 +122,10 @@ Call `await sdk.request(method, input)`. These methods run in the background ent
 | `media.selection` | `media.read` | No input; `[{assetId,path,type}]` for the bound selection |
 | `tags.propose` | `tags.propose` | `{items:[{assetId,tags:string[]}]}`; `{planId,count}` |
 | `storage.directory` | `storage.private` | No input; `{directory}` |
-| `runtime.tool` | `runtime.tools` | `{name:'uv'}` or `{name:'7z'}`; `{path,managedPythonDirectory,cacheDirectory}` |
+| `runtime.tool` | `runtime.tools` | `{name:'uv'}` or `{name:'7z'}`; `{path,managedPythonDirectory,cacheDirectory}`. Feature-gated `{name:'ffmpeg'}` returns `{path}`; see the selection guide. |
 | `network.request` | `network.request` | `{url,method?,headers?,body?}`; `{status,contentType,body}` |
 | `tasks.progress` | `tasks.progress` | Progress object described in section 10; `{accepted:true}` |
-| `files.resolve` | `ui.dialogs` | `{token,mode:'read'}`; `{path,name,size}`, live workspace required |
+| `files.resolve` | `ui.dialogs` | `{token,mode:'read'}`; `{path,name,size}`, live workspace required. Feature-gated `mode:'write-dir'` returns `{path,name}` for an authorized directory token. |
 | `files.export` | `ui.dialogs` | `{path,name}`; `{token,name,size}`, live workspace required |
 | `creators.lookup` | `creators.read` | `{records}`; `{items:[{index,exists,invalid?}]}` |
 | `creators.propose` | `creators.propose` | `{records}`; `{planId,items:[{index,status,reason?}],expiresAt}` |
@@ -241,6 +241,8 @@ ME injects `window.MEPlugin` into the sandboxed frame. It exposes `ready()`, `in
 |---|---|---|
 | `dialog.open` | `ui.dialogs` | `{extensions:['txt'],multiple:false}`; `{cancelled,files:[{token,name,size}]}` |
 | `dialog.save` | `ui.dialogs` | `{token}`; `{cancelled}` |
+| `media.selection` | `media.read` | `{}`; bound command selection, available with `selection-dialog` |
+| `dialog.directory` | `ui.dialogs` | `{}`; `{cancelled:true}` or `{cancelled:false,token,name}`, available with `directory-token` |
 | `storage.resource` | `storage.read` | Relative `{path}`; session-bound `{url}` for a supported image |
 | `clipboard.write` | `ui.clipboard` | `{text}` at most 100,000 characters; `{written:true}` |
 | `external.open` | `ui.external` | `{url}`; `{opened:true}` or `{cancelled:true}` |
@@ -249,9 +251,15 @@ ME injects `window.MEPlugin` into the sandboxed frame. It exposes `ready()`, `in
 
 Use `MEPlugin.request('storage.resource',{path})`, not `MEPlugin.storage.resource`. Likewise `sdk.request` and `MEPlugin.request` have different method sets. The host's `pluginJobConfigure`, `pluginJobControl`, installer and trust controls are ME UI internals, not plugin APIs.
 
+Newer hosts also return optional `features` and `selectionBound` from `ready()`. Detect features before using the additional interfaces; a missing field does not indicate support. See the selection guide for response shapes and invalidation rules.
+
 Pack scripts and styles; load them by relative path. Do not use inline scripts, eval, external scripts, direct browser network requests, Node integration or Electron IPC. Render external text via `textContent`, never `innerHTML`. Network work belongs in background commands. Do not copy host bridge code into the package or persist workspace/file tokens. Disable, uninstall, privacy lock and replacement revoke resources. Requests from hidden or closed workspaces may fail; never queue and replay hidden writes when returning. Reload current state in a new live session.
 
-API 1 command forms bind the media selection when opened; reopen for a changed selection. API 2 workspaces are not an implicit media-selection API. The default API 2 workspace appears as a sidebar page. Optional `workspace.placement:'creator-toolbar'`, `platform` and `presentation:'dialog'` instead register a platform toolbar dialog. Accepted platform IDs: `DOUYIN`, `TIKTOK`, `XIAOHONGSHU`, `TWITTER`, `INSTAGRAM`, `BILIBILI`, `PIXIV`, `FANTIA`, `OTHER`. A sidebar workspace requires page presentation without a platform. Arbitrary DOM selectors are unsupported. Close/Escape uses host task decisions.
+API 1 command forms bind the media selection when opened; reopen for a changed selection. API 2 workspaces are not an implicit media-selection API; selection-dialog commands can explicitly bind a snapshot from media menus. The default API 2 workspace appears as a sidebar page. Optional `workspace.placement:'creator-toolbar'`, `platform` and `presentation:'dialog'` instead register a platform toolbar dialog. Accepted platform IDs: `DOUYIN`, `TIKTOK`, `XIAOHONGSHU`, `TWITTER`, `INSTAGRAM`, `BILIBILI`, `PIXIV`, `FANTIA`, `OTHER`. A sidebar workspace requires page presentation without a platform. Arbitrary DOM selectors are unsupported. Close/Escape uses host task decisions.
+
+
+
+See [selection dialogs and transcoding tools](selection-workspace.en-US.md) for `when.selection`, command `ui.open`, workspace `media.selection`, `dialog.directory` / `files.resolve(write-dir)` and managed `runtime.tool(ffmpeg)`. It includes feature detection, a complete runnable setup-check plugin, permission requirements and close behavior. These additions must not be assumed available in every older ME release.
 
 ## 8. Theme, language and usability
 
@@ -385,6 +393,14 @@ ME records bounded numeric host/UI stages. Host samples are process-wide aggrega
 - Removing a catalog entry, uninstalling, deleting private data, stopping a task and clearing reviews are different actions. Do not conflate their effects.
 
 ## 18. Required validation and delivery
+
+### Debugging without ME source code
+
+Installation and local testing do not require ME source code. For each reproduction, record the ME and plugin versions, command identifier, task identifier, input category (without private file contents), last progress stage and `status(taskId).error.code`. Distinguish interface rejection from plugin execution failure. Polling a completed task returns its outcome; stop polling on terminal states and disposal.
+
+Current diagnostics have limits: `diagnostics.report` accepts performance numbers only, not text logs. Background command stdout/stderr is not captured, and uncaught JavaScript errors may become `PLUGIN_EXECUTION_FAILED` without a source line or stack. Do not promise that ME's general logs contain those details or rely on `console.log` for backend diagnostics.
+
+A trusted-native backend can implement its own bounded diagnostic file under the directory returned by `storage.directory` (requires `storage.private`). Catch errors at the plugin boundary and record a sanitized message, plugin-relative source position and processing stage; expose a clear way to retrieve the file. Rotate logs and omit tokens, credentials, media contents and unnecessary absolute paths. Workspace UI cannot directly use Node filesystem APIs; use a declared backend command for retrieval and the documented export flow. This is a plugin-owned workaround, not an existing unified ME diagnostic-log API. When asking an agent for help, provide the relevant sanitized excerpt, reproduction steps and plugin source, not account credentials.
 
 Run the applicable cases and record actual results, host/API and plugin versions. Mark a case not applicable with a reason; do not silently omit it.
 
