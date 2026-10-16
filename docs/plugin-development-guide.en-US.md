@@ -123,6 +123,8 @@ Call `await sdk.request(method, input)`. These methods run in the background ent
 | `tags.propose` | `tags.propose` | `{items:[{assetId,tags:string[]}]}`; `{planId,count}` |
 | `storage.directory` | `storage.private` | No input; `{directory}` |
 | `runtime.tool` | `runtime.tools` | `{name:'uv'}` or `{name:'7z'}`; `{path,managedPythonDirectory,cacheDirectory}`. Feature-gated `{name:'ffmpeg'}` returns `{path}`; see the selection guide. |
+| `runtime.catalog` / `runtime.inspect` | `runtime.tools` | Runtime status/version queries; detect `runtime-catalog`, see the [runtime guide](runtime-reuse.en-US.md) |
+| `runtime.execute` | `runtime.tools` plus operation permissions | Structured controlled FFmpeg/ffprobe operation; detect `runtime-execute`, see the [runtime guide](runtime-reuse.en-US.md) |
 | `network.request` | `network.request` | `{url,method?,headers?,body?}`; `{status,contentType,body}` |
 | `tasks.progress` | `tasks.progress` | Progress object described in section 10; `{accepted:true}` |
 | `files.resolve` | `ui.dialogs` | `{token,mode:'read'}`; `{path,name,size}`, live workspace required. Feature-gated `mode:'write-dir'` returns `{path,name}` for an authorized directory token. |

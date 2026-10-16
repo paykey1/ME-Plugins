@@ -9,6 +9,7 @@
 
 - [选区弹窗与转码工具](selection-workspace.zh-CN.md)：选区条件、输出目录授权及托管 FFmpeg。
 - [插件调试与脱敏日志](debugging.zh-CN.md)：开启调试、定位堆栈行号、导出给开发者或 AI。
+- [托管环境复用与受控任务](runtime-reuse.zh-CN.md)：环境目录、版本查询、FFmpeg/ffprobe 调用与共享调度边界。
 
 ## English
 
@@ -19,6 +20,7 @@
 
 - [Selection dialogs and transcoding tools](selection-workspace.en-US.md): selection conditions, output directory grants and managed FFmpeg.
 - [Plugin debugging and redacted logs](debugging.en-US.md): enable capture, locate stack frames and export for developers or AI.
+- [Managed runtimes and controlled tasks](runtime-reuse.en-US.md): runtime catalog, version queries, FFmpeg/ffprobe execution and scheduling boundaries.
 
 插件文档统一在本仓库维护。源码投稿、审核与安装在 ME 插件中心进行，文档更新不代表某插件已审核或上架。
 

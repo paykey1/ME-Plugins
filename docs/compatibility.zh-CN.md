@@ -36,3 +36,5 @@ ME 0.26.0 已发布。开发和测试时，请记录完整的 ME 版本、插件
 新增选区弹窗、目录授权与 FFmpeg 接口必须检查宿主 `ready().features`，不能根据“0.26+”推定支持。见[能力检测与示例](selection-workspace.zh-CN.md)。
 
 统一插件诊断需要 ready().features 包含 debug-logs。旧宿主可能只提供错误码，能力检测不得阻断插件主要功能。详见[调试收集、导出与限制](debugging.zh-CN.md)；原任务失败代码和 diagnostics.report 接口保持兼容。
+
+运行环境查询与受控执行需检测 runtime-catalog/runtime-execute，详见[托管环境与受控任务](runtime-reuse.zh-CN.md)。发现组件不等于获得任意执行或账号访问权限；自行使用 runtime.tool 路径启动的进程不受统一调度约束。

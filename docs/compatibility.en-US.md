@@ -36,3 +36,5 @@ See the [developer guide](plugin-development-guide.en-US.md) for the complete AP
 New selection-dialog, directory-grant and FFmpeg interfaces require host `ready().features` checks; do not infer availability from “0.26+”. See [feature detection and example](selection-workspace.en-US.md).
 
 Unified plugin diagnostics require `debug-logs` in `ready().features`. Older hosts may only expose error codes. Detection must not block the plugin's main operation. See [debug capture, export and limitations](debugging.en-US.md); original task failure codes and `diagnostics.report` remain compatible.
+
+See [managed runtimes and controlled tasks](runtime-reuse.en-US.md) for runtime-catalog/runtime-execute feature detection. A discovered component is not an unrestricted execution or account-access grant; direct runtime.tool spawning remains outside coordinated admission.

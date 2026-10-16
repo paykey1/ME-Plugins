@@ -119,6 +119,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 | tags.propose | tags.propose | {items:[{assetId,tags:string[]}]} → {planId,count} |
 | storage.directory | storage.private | 无参数 → {directory} |
 | runtime.tool | runtime.tools | {name:'uv'} 或 {name:'7z'} → {path,managedPythonDirectory,cacheDirectory}。新增 {name:'ffmpeg'} → {path}，需先检测能力，见选区指南。 |
+| runtime.catalog / runtime.inspect | runtime.tools | 运行环境状态与版本查询；检测 runtime-catalog，见[环境复用指南](runtime-reuse.zh-CN.md) |
+| runtime.execute | runtime.tools 及操作所需权限 | 结构化 FFmpeg/ffprobe 受控操作；检测 runtime-execute，见[环境复用指南](runtime-reuse.zh-CN.md) |
 | network.request | network.request | {url,method?,headers?,body?} → {status,contentType,body} |
 | tasks.progress | tasks.progress | 第 10 节进度 → {accepted:true} |
 | files.resolve | ui.dialogs | {token,mode:'read'} → {path,name,size}，需要有效工作区。新增 mode:'write-dir' 通过已授权目录凭据返回 {path,name}，需先检测能力。 |
