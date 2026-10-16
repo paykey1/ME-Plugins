@@ -8,6 +8,7 @@
 - [说明提示示例](contextual-help.zh-CN.md)：圈叹号帮助、键盘操作、语言切换与清理要求。
 
 - [选区弹窗与转码工具](selection-workspace.zh-CN.md)：选区条件、输出目录授权及托管 FFmpeg。
+- [插件调试与脱敏日志](debugging.zh-CN.md)：开启调试、定位堆栈行号、导出给开发者或 AI。
 
 ## English
 
@@ -17,6 +18,7 @@
 - [Contextual help example](contextual-help.en-US.md): circled help buttons, keyboard access, language changes and cleanup.
 
 - [Selection dialogs and transcoding tools](selection-workspace.en-US.md): selection conditions, output directory grants and managed FFmpeg.
+- [Plugin debugging and redacted logs](debugging.en-US.md): enable capture, locate stack frames and export for developers or AI.
 
 插件文档统一在本仓库维护。源码投稿、审核与安装在 ME 插件中心进行，文档更新不代表某插件已审核或上架。
 

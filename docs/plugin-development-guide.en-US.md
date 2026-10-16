@@ -248,6 +248,7 @@ ME injects `window.MEPlugin` into the sandboxed frame. It exposes `ready()`, `in
 | `external.open` | `ui.external` | `{url}`; `{opened:true}` or `{cancelled:true}` |
 | `creators.confirm` | `creators.propose` | `{planId}`; `{imported,existing,failed:[{index,code}],cancelled}` |
 | `diagnostics.report` | Live workspace | Numeric-only report described in section 16 |
+| `diagnostics.log` | Live visible workspace | Optional handled-error report; detect `debug-logs`, see the debugging guide |
 
 Use `MEPlugin.request('storage.resource',{path})`, not `MEPlugin.storage.resource`. Likewise `sdk.request` and `MEPlugin.request` have different method sets. The host's `pluginJobConfigure`, `pluginJobControl`, installer and trust controls are ME UI internals, not plugin APIs.
 
@@ -396,12 +397,9 @@ ME records bounded numeric host/UI stages. Host samples are process-wide aggrega
 
 ### Debugging without ME source code
 
-Installation and local testing do not require ME source code. For each reproduction, record the ME and plugin versions, command identifier, task identifier, input category (without private file contents), last progress stage and `status(taskId).error.code`. Distinguish interface rejection from plugin execution failure. Polling a completed task returns its outcome; stop polling on terminal states and disposal.
+ME provides opt-in plugin debug capture on hosts advertising `debug-logs`. Open Plugin settings, enable Developer debug logs, reproduce, and export a redacted JSON report. It includes backend and workspace errors, relative stack locations, task identifiers and bounded stdout/stderr. Review the file before sharing with an agent. Debug defaults off and does not upload data.
 
-Current diagnostics have limits: `diagnostics.report` accepts performance numbers only, not text logs. Background command stdout/stderr is not captured, and uncaught JavaScript errors may become `PLUGIN_EXECUTION_FAILED` without a source line or stack. Do not promise that ME's general logs contain those details or rely on `console.log` for backend diagnostics.
-
-A trusted-native backend can implement its own bounded diagnostic file under the directory returned by `storage.directory` (requires `storage.private`). Catch errors at the plugin boundary and record a sanitized message, plugin-relative source position and processing stage; expose a clear way to retrieve the file. Rotate logs and omit tokens, credentials, media contents and unnecessary absolute paths. Workspace UI cannot directly use Node filesystem APIs; use a declared backend command for retrieval and the documented export flow. This is a plugin-owned workaround, not an existing unified ME diagnostic-log API. When asking an agent for help, provide the relevant sanitized excerpt, reproduction steps and plugin source, not account credentials.
-
+See [plugin debugging and redacted logs](debugging.en-US.md) for exact limits, lifecycle, optional handled-error reporting, redaction boundaries and source-map limitations. Older hosts without this capability still expose task state/error codes and numeric performance reports; they do not provide this complete capture workflow. Do not claim every exception can be captured.
 Run the applicable cases and record actual results, host/API and plugin versions. Mark a case not applicable with a reason; do not silently omit it.
 
 | Area | Required evidence |

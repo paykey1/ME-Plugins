@@ -244,6 +244,7 @@ MEPlugin.ready().then(context => {
 | external.open | ui.external | {url} → {opened:true} 或 {cancelled:true} |
 | creators.confirm | creators.propose | {planId} → {imported,existing,failed:[{index,code}],cancelled} |
 | diagnostics.report | 有效工作区 | 第 16 节纯数值报告 |
+| diagnostics.log | 有效且可见工作区 | 可选的已捕获错误报告；检测 debug-logs 能力，见调试指南 |
 
 正确调用为 MEPlugin.request('storage.resource',{path})，不存在 MEPlugin.storage.resource。sdk.request 和 MEPlugin.request 方法集合不同。pluginJobConfigure、pluginJobControl、安装器、信任控制属于主体内部，不是插件 SDK。
 
@@ -392,12 +393,9 @@ JavaScript 无需编译；TypeScript 或打包器需完整原源码、锁定依�
 
 ### 不依赖 ME 源码的本地调试
 
-安装和本地测试不需要 ME 主体源码。复现问题时记录 ME 与插件版本、命令标识、任务编号、输入类型（不包含私人文件内容）、最后进度阶段及 status(taskId).error.code。区分接口拒绝与插件执行失败；任务完成后可查询结果，进入结束状态或销毁界面后停止轮询。
+提供 debug-logs 能力的 ME 宿主支持统一插件调试：打开插件设置，开启开发者调试日志，复现问题后导出脱敏 JSON。记录包括后台和工作区错误、相对堆栈位置、任务编号及限量标准输出/错误输出。分享给 agent 前请检查内容。调试默认关闭，不上传数据。
 
-现有诊断能力有限：diagnostics.report 只收性能数值，不接收文本日志。后台命令的标准输出和错误输出未被收集，未捕获的 JavaScript 异常可能被转换为 PLUGIN_EXECUTION_FAILED，不带源码行号和堆栈。不要声称 ME 常规日志一定包含这些信息，也不要依靠后台 console.log 获取诊断记录。
-
-trusted-native 后台可在 storage.directory 返回的插件私有目录中自行维护有大小限制的诊断文件（需 storage.private 权限）。在插件边界捕获异常，记录脱敏后的错误说明、插件内相对源码位置和处理阶段，并提供明确的日志获取入口。限制文件数量和大小，不记录令牌、凭据、媒体内容及不必要的绝对路径。工作区界面不能直接使用 Node 文件接口，应通过声明的后台命令获取日志并使用文档中的导出流程。这是插件自行实现的临时调试方式，并非已有的 ME 统一诊断日志接口。交给 agent 排查时，提供相关脱敏片段、复现步骤和插件源码，不提供账号凭据。
-
+详细容量、生命周期、已捕获错误报告接口、脱敏边界及源码映射限制见[插件调试与脱敏日志](debugging.zh-CN.md)。没有该能力的旧版宿主仍只有任务状态、错误代码及纯数值性能报告，不具备这套完整收集流程；不能宣称所有异常都能捕获。
 记录实际结果、宿主版本、接口和插件版本。不适用须说明，不默默跳过。
 
 | 项目 | 必须验证 |

@@ -34,3 +34,5 @@ The submission ID and version must match the manifest inside the source ZIP. Rev
 See the [developer guide](plugin-development-guide.en-US.md) for the complete API contract, examples and validation checklist.
 
 New selection-dialog, directory-grant and FFmpeg interfaces require host `ready().features` checks; do not infer availability from “0.26+”. See [feature detection and example](selection-workspace.en-US.md).
+
+Unified plugin diagnostics require `debug-logs` in `ready().features`. Older hosts may only expose error codes. Detection must not block the plugin's main operation. See [debug capture, export and limitations](debugging.en-US.md); original task failure codes and `diagnostics.report` remain compatible.
